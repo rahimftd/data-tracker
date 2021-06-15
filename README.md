@@ -71,7 +71,7 @@ flask run
 ```
 
 # Scalability
-To improve the scalability of this app, I would focus on 2 areas:
+To improve the scalability of this app, I would focus on 3 areas:
 - Price Ingester: The price ingester is essentially a python script that runs on a loop and queries the cryptocurrency api. In a production system, I would like to rewrite this to run as a separate service with a task scheduler/worker model. Each task would query the current price for a single symbol.
 - Datastore: Due to time constraints, this app uses a sqlite database. However, I don't think this is the best choice for a production app. A typical relational databse is not the right choice because (1) that data is not relational in nature and (2) our primary concern is handling a large number of concurrent reads/writes. As such, I think Cassandra of Amazon DynamoDB are both better options for a production system.
 - API: The API, as written, is relatively light on business logic and should be able to handle a large number of requests as long as we scale horizontally. That being said, we could get some performance imporovements by switching to a language like Java or Go. However, I do not believe this is necessary.
@@ -82,13 +82,15 @@ Due to time constraints, I was unable to write tests for this app. In a producti
 - CI/CD job to run unit tests on all pull requests on creation.
 - CI/CD job to test master after a PR is merged.
 
+In addition, we could run blackbox integration tests which query our api and check that the response is as expected. Because of the constantly changing nature of the data, we would need to identify some other source of truth with which to compare the response.
+
 # Feature Request
 Requirement: For all currencies, push alert to users when its value is 3x the l1h average.
 
 Proposal:
 - Every time our price ingester updates a currency's price, it emits a "price-updated" event
 - A separate alerting service ingests the event and compares the latest price vs. the l1h average
-- If the current_price >= 3 * avg_price, the alerting service sends a notification to the users
+- If the current_price >= 3 * avg_price, the alerting service sends a notification to the users. For example, this notification could take the form of an email.
 
 Potential drawbacks:
 - Creates a new service which may add complexity. It is possible to house this logic in the price ingester. However, for long-term scalability and maintainability, I think it makse sense to have a separate alerting service
@@ -100,3 +102,4 @@ In addition to what has already been discussed above, if I had additional time I
 - Rewrite the ranking endpoint to automatically pick "comparable" currencies. As written today, the endpoint requires the caller to pass in a list of currencies they want to rank/compare
 - Add input validation to check request parameters
 - Logging/metrics to track the performance of all endpoints, clients, etc.
+- Better error handling throughout the app. For example, in the ranking endpoint we do not handle errors returned from the stdev() function.
