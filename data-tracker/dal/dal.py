@@ -42,7 +42,7 @@ class CryptoDAL:
 def create_db_connection(): 
     conn = None
     try:
-        conn = sqlite3.connect(DEFAULT_DB_FILE)
+        conn = sqlite3.connect(DEFAULT_DB_FILE, check_same_thread=False)
     except Exception as e:
         print(e)
     return conn
